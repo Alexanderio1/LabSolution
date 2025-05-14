@@ -34,10 +34,10 @@
             this.txtUser = new System.Windows.Forms.TextBox();
             this.txtPass = new System.Windows.Forms.TextBox();
             this.panel1 = new System.Windows.Forms.Panel();
-            this.picKey = new System.Windows.Forms.PictureBox();
-            this.lblTitle = new System.Windows.Forms.Label();
-            this.lblVersionBar = new System.Windows.Forms.Label();
             this.lblVersion = new System.Windows.Forms.Label();
+            this.lblVersionBar = new System.Windows.Forms.Label();
+            this.lblTitle = new System.Windows.Forms.Label();
+            this.picKey = new System.Windows.Forms.PictureBox();
             this.panelHint = new System.Windows.Forms.Panel();
             this.lblHint = new System.Windows.Forms.Label();
             this.lblUser = new System.Windows.Forms.Label();
@@ -102,15 +102,24 @@
             this.panel1.Size = new System.Drawing.Size(844, 170);
             this.panel1.TabIndex = 4;
             // 
-            // picKey
+            // lblVersion
             // 
-            this.picKey.Image = ((System.Drawing.Image)(resources.GetObject("picKey.Image")));
-            this.picKey.Location = new System.Drawing.Point(12, 22);
-            this.picKey.Name = "picKey";
-            this.picKey.Size = new System.Drawing.Size(128, 128);
-            this.picKey.SizeMode = System.Windows.Forms.PictureBoxSizeMode.StretchImage;
-            this.picKey.TabIndex = 0;
-            this.picKey.TabStop = false;
+            this.lblVersion.Dock = System.Windows.Forms.DockStyle.Right;
+            this.lblVersion.Location = new System.Drawing.Point(602, 0);
+            this.lblVersion.Name = "lblVersion";
+            this.lblVersion.Padding = new System.Windows.Forms.Padding(0, 0, 4, 0);
+            this.lblVersion.Size = new System.Drawing.Size(240, 168);
+            this.lblVersion.TabIndex = 3;
+            this.lblVersion.Text = "Версия 1.0.0.0";
+            this.lblVersion.TextAlign = System.Drawing.ContentAlignment.MiddleRight;
+            // 
+            // lblVersionBar
+            // 
+            this.lblVersionBar.BackColor = System.Drawing.Color.Gold;
+            this.lblVersionBar.Location = new System.Drawing.Point(160, 76);
+            this.lblVersionBar.Name = "lblVersionBar";
+            this.lblVersionBar.Size = new System.Drawing.Size(668, 40);
+            this.lblVersionBar.TabIndex = 2;
             // 
             // lblTitle
             // 
@@ -122,24 +131,15 @@
             this.lblTitle.Text = "АИС Отдел кадров";
             this.lblTitle.TextAlign = System.Drawing.ContentAlignment.MiddleRight;
             // 
-            // lblVersionBar
+            // picKey
             // 
-            this.lblVersionBar.BackColor = System.Drawing.Color.Gold;
-            this.lblVersionBar.Location = new System.Drawing.Point(160, 76);
-            this.lblVersionBar.Name = "lblVersionBar";
-            this.lblVersionBar.Size = new System.Drawing.Size(668, 40);
-            this.lblVersionBar.TabIndex = 2;
-            // 
-            // lblVersion
-            // 
-            this.lblVersion.Dock = System.Windows.Forms.DockStyle.Right;
-            this.lblVersion.Location = new System.Drawing.Point(602, 0);
-            this.lblVersion.Name = "lblVersion";
-            this.lblVersion.Padding = new System.Windows.Forms.Padding(0, 0, 4, 0);
-            this.lblVersion.Size = new System.Drawing.Size(240, 168);
-            this.lblVersion.TabIndex = 3;
-            this.lblVersion.Text = "Версия 1.0.0.0";
-            this.lblVersion.TextAlign = System.Drawing.ContentAlignment.MiddleRight;
+            this.picKey.Image = ((System.Drawing.Image)(resources.GetObject("picKey.Image")));
+            this.picKey.Location = new System.Drawing.Point(12, 22);
+            this.picKey.Name = "picKey";
+            this.picKey.Size = new System.Drawing.Size(128, 128);
+            this.picKey.SizeMode = System.Windows.Forms.PictureBoxSizeMode.StretchImage;
+            this.picKey.TabIndex = 0;
+            this.picKey.TabStop = false;
             // 
             // panelHint
             // 
@@ -202,7 +202,7 @@
             // sslSpacer
             // 
             this.sslSpacer.Name = "sslSpacer";
-            this.sslSpacer.Size = new System.Drawing.Size(739, 32);
+            this.sslSpacer.Size = new System.Drawing.Size(801, 32);
             this.sslSpacer.Spring = true;
             this.sslSpacer.Text = " ";
             // 

@@ -23,7 +23,7 @@ namespace AuthLib
         public UserContext(string name)
         {
             UserName = name;
-            Rules = new Dictionary<string, ItemStatus>(StringComparer.OrdinalIgnoreCase);
+            Rules = new Dictionary<string, ItemStatus>();
         }
 
         public bool CanSee(string title)
@@ -72,7 +72,7 @@ namespace AuthLib
                                            StringSplitOptions.RemoveEmptyEntries);
                 if (head.Length != 2) continue;
 
-                if (!head[0].Equals(user, StringComparison.OrdinalIgnoreCase))
+                if (head[0] != user)
                     continue;
 
                 if (head[1].Trim() != pass.Trim())
@@ -80,7 +80,7 @@ namespace AuthLib
 
                 var ctx = new UserContext(user);
 
-                // читаем права до следующего «#» или конца файла
+                // Читаем права до следующего «#» или конца файла.
                 for (int j = i + 1;
                      j < lines.Length && !lines[j].StartsWith("#"); j++)
                 {

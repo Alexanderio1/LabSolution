@@ -1,5 +1,6 @@
 ﻿using System;
 using System.IO;
+using System.Reflection;
 using System.Windows.Forms;
 
 namespace DemoApp
@@ -13,13 +14,25 @@ namespace DemoApp
             Application.SetCompatibleTextRenderingDefault(false);
             Directory.SetCurrentDirectory(AppDomain.CurrentDomain.BaseDirectory);
 
-            using (var login = new LoginForm())
+            // Явная загрузка AuthLib.dll.
+            Assembly asmAuth = Assembly.LoadFrom("AuthLib.dll");
+            Type tAuth = asmAuth.GetType("AuthLib.FileAuthService");
+            dynamic authSvc = Activator.CreateInstance(tAuth);
+
+            // Форма логина.
+            LoginForm login = new LoginForm();
+            if (login.ShowDialog() != DialogResult.OK) return;
+
+            // Авторизация.
+            dynamic result = authSvc.Login(login.User, login.Pass, "USERS.txt");
+            if (!(bool)result.IsSuccess)
             {
-                if (login.ShowDialog() != DialogResult.OK ||
-                    !login.Result.IsSuccess)
-                    return;                       // отказ или неуспех
-                Application.Run(new MainForm(login.Result.Context));
+                MessageBox.Show("Неверные имя или пароль", "Вход",
+                                MessageBoxButtons.OK, MessageBoxIcon.Error);
+                return;
             }
+
+            Application.Run(new MainForm(result.Context));
         }
     }
 }

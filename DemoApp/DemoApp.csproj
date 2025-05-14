@@ -96,15 +96,5 @@
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
   </ItemGroup>
-  <ItemGroup>
-    <ProjectReference Include="..\AuthLib\AuthLib.csproj">
-      <Project>{faa6dedc-4d22-4ccc-99e3-3e90efc80150}</Project>
-      <Name>AuthLib</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\MenuLib\MenuLib.csproj">
-      <Project>{e93fd796-0be2-462b-b4df-a137561a06fe}</Project>
-      <Name>MenuLib</Name>
-    </ProjectReference>
-  </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>
