@@ -52,6 +52,8 @@ namespace DemoApp
         private void Departs() => MessageBox.Show("Отделы");
         private void Towns() => MessageBox.Show("Города");
         private void Posts() => MessageBox.Show("Должности");
+        private void Window() => MessageBox.Show("Окно");
         private void About() => MessageBox.Show("О программе");
+        private void Content() => MessageBox.Show("Оглавление");
     }
 }
