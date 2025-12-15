@@ -10,6 +10,7 @@ namespace DemoApp
         private readonly dynamic _ctx;
         private readonly dynamic _menu;
         private readonly MethodInfo _childrenOf;
+        private QueryForm _queries;
 
         public MainForm(dynamic ctx)
         {
@@ -65,5 +66,18 @@ namespace DemoApp
         private void About() => MessageBox.Show("О программе");
         private void Content() => MessageBox.Show("Оглавление");
         private void Window() => MessageBox.Show("Окно");
+
+        private void Queries()
+        {
+            if (_queries == null || _queries.IsDisposed)
+            {
+                _queries = new QueryForm { MdiParent = this };
+                _queries.Show();
+            }
+            else
+            {
+                _queries.Focus();
+            }
+        }
     }
 }
