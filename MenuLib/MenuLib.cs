@@ -1,99 +1,75 @@
-﻿using System;                       // базовые типы (Exception и пр.)
-using System.Collections.Generic;   // List<>, IEnumerable<>
-using System.IO;                    // File.ReadAllLines
-using System.Linq;                  // Where(), Select(), ToList()
-using System.Reflection;            // BindingFlags, MethodInfo
+using System;
+using System.Collections.Generic;
+using System.Configuration;
+using System.Linq;
+using Npgsql;
 
 namespace MenuLib
 {
-    /// <summary>Один пункт меню.</summary>
-    public class MenuItem
+    public class DbMenuItem
     {
-        // --- Свойства класса MenuItem ---
-        public int Level { get; }       // уровень вложенности (0–корень, 1–дочерний и т.п.)
-        public string Title { get; }    // текст, который показывается в меню
-        public string Handler { get; }  // имя метода-обработчика (null/empty → есть подпункты)
+        public int Id { get; }
+        public int? ParentId { get; }
+        public string Caption { get; }
+        public string DllName { get; }
+        public string EntryPoint { get; }
+        public int SortOrder { get; }
 
-        // --- Конструктор MenuItem(level, title, handler) ---
-        public MenuItem(int level, string title, string handler)
+        public DbMenuItem(int id, int? parentId, string caption, string dllName, string entryPoint, int sortOrder)
         {
-            Level = level;
-            Title = title;
-            Handler = handler;
+            Id = id;
+            ParentId = parentId;
+            Caption = caption;
+            DllName = dllName;
+            EntryPoint = entryPoint;
+            SortOrder = sortOrder;
         }
     }
 
     public class DataDrivenMenu
     {
-        // Список всех пунктов меню в порядке чтения из файла.
-        public List<MenuItem> Items { get; private set; }
+        public List<DbMenuItem> Items { get; private set; }
 
-        public DataDrivenMenu(string path = "menu.txt")
+        public DataDrivenMenu(string connectionString = null)
         {
-
-            Items = File.ReadAllLines(path)
-                        .Where(l => !string.IsNullOrWhiteSpace(l)
-                                 && !l.TrimStart().StartsWith("#"))
-                        .Select(Parse)
-                        .ToList();
+            var cs = connectionString ?? ConfigurationManager.ConnectionStrings["DefaultConnection"].ConnectionString;
+            Items = Load(cs);
         }
 
-        //Превращает одну строку из файла в объект MenuItem.
-        private static MenuItem Parse(string line)
+        private static List<DbMenuItem> Load(string connectionString)
         {
-
-            var parts = line.Split(new[] { ' ' }, 3,
-                                   StringSplitOptions.RemoveEmptyEntries);
-
-            // Если получено менее 2 частей — строка некорректна.
-            if (parts.Length < 2)
-                throw new FormatException("Некорректная строка меню: " + line);
-
-            // 1) Парсим уровень из текста в int.
-            int level = int.Parse(parts[0]);
-            // 2) Второй токен — заголовок пункта.
-            string title = parts[1];
-            // 3) Если есть третья часть — это имя обработчика, иначе null
-            string handler = parts.Length == 3 ? parts[2] : null;
-
-            // Создаём и возвращаем новую запись меню.
-            return new MenuItem(level, title, handler);
-        }
-
-        public IEnumerable<MenuItem> ChildrenOf(MenuItem parent)
-        {
-            // Найдём индекс parent в списке.
-            int index = Items.IndexOf(parent);
-            if (index < 0)
-                yield break;   // Если не нашли — не возвращаем ничего.
-
-            int parentLevel = parent.Level;
-            // Идём по списку от следующей позиции, пока уровень > уровня parent.
-            for (int i = index + 1; i < Items.Count && Items[i].Level > parentLevel; i++)
+            var items = new List<DbMenuItem>();
+            using (var conn = new NpgsqlConnection(connectionString))
             {
-                // Если уровень = parentLevel + 1 — это непосредственный потомок.
-                if (Items[i].Level == parentLevel + 1)
-                    yield return Items[i];
+                conn.Open();
+                using (var cmd = new NpgsqlCommand(@"SELECT id, parent_id, caption, dll_name, entry_point, sort_order
+                                                     FROM menu_items
+                                                    ORDER BY COALESCE(parent_id, 0), sort_order, id", conn))
+                using (var reader = cmd.ExecuteReader())
+                {
+                    while (reader.Read())
+                    {
+                        items.Add(new DbMenuItem(
+                            reader.GetInt32(0),
+                            reader.IsDBNull(1) ? (int?)null : reader.GetInt32(1),
+                            reader.GetString(2),
+                            reader.IsDBNull(3) ? null : reader.GetString(3),
+                            reader.IsDBNull(4) ? null : reader.GetString(4),
+                            reader.GetInt32(5)));
+                    }
+                }
             }
+            return items;
         }
 
-        public void Invoke(MenuItem item, object target)
+        public IEnumerable<DbMenuItem> Roots()
         {
-            // Если Handler пустой или null — ничего не делаем.
-            if (string.IsNullOrEmpty(item.Handler))
-                return;
+            return Items.Where(i => i.ParentId == null).OrderBy(i => i.SortOrder).ThenBy(i => i.Id);
+        }
 
-            // Получаем объект System.Reflection.MethodInfo для имени метода.
-            var method = target.GetType()
-                               .GetMethod(item.Handler,
-                                          BindingFlags.Instance    // Ищем среди методов экземпляра.
-                                        | BindingFlags.Public      // Как публичные.
-                                        | BindingFlags.NonPublic); // Так и приватные.
-
-            if (method == null)
-                throw new MissingMethodException("Метод не найден: " + item.Handler);
-
-            method.Invoke(target, null);
+        public IEnumerable<DbMenuItem> ChildrenOf(DbMenuItem parent)
+        {
+            return Items.Where(i => i.ParentId == parent.Id).OrderBy(i => i.SortOrder).ThenBy(i => i.Id);
         }
     }
 }

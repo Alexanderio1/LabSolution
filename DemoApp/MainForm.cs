@@ -1,69 +1,102 @@
-﻿using System;
-using System.Linq;
+using System;
+using System.IO;
 using System.Reflection;
 using System.Windows.Forms;
+using AuthLib;
+using MenuLib;
 
 namespace DemoApp
 {
     public partial class MainForm : Form
     {
-        private readonly dynamic _ctx;
-        private readonly dynamic _menu;
-        private readonly MethodInfo _childrenOf;
+        private readonly UserContext _ctx;
+        private readonly IAuthService _authService;
+        private readonly DataDrivenMenu _menu;
 
-        public MainForm(dynamic ctx)
+        public MainForm(UserContext ctx, IAuthService authService)
         {
             _ctx = ctx;
+            _authService = authService;
             InitializeComponent();
-            sslUser.Text = "Пользователь: " + _ctx.UserName;
+            sslUser.Text = $"Пользователь: {_ctx.UserName} ({_ctx.RoleName})";
             sslVer.Text = "Версия: " + Application.ProductVersion;
 
-            Assembly asmMenu = Assembly.LoadFrom("MenuLib.dll");
-            Type tMenu = asmMenu.GetType("MenuLib.DataDrivenMenu");
-            _menu = Activator.CreateInstance(tMenu, new object[] { "menu.txt" });
-            _childrenOf = tMenu.GetMethod("ChildrenOf");
-
+            _menu = new DataDrivenMenu(_ctx.ConnectionString);
             BuildMenu();
         }
 
         private void BuildMenu()
         {
-            foreach (dynamic item in _menu.Items)
+            foreach (var item in _menu.Roots())
             {
-                if (item.Level == 0 && _ctx.CanSee(item.Title))
+                if (_ctx.CanSee(item.Id))
                     menuStrip1.Items.Add(CreateItem(item));
             }
         }
 
-        private ToolStripMenuItem CreateItem(dynamic item)
+        private ToolStripMenuItem CreateItem(DbMenuItem item)
         {
-            var mi = new ToolStripMenuItem((string)item.Title)
+            var mi = new ToolStripMenuItem(item.Caption)
             {
-                Enabled = _ctx.CanUse(item.Title)
+                Enabled = _ctx.CanUse(item.Id),
+                Tag = item
             };
 
-            foreach (dynamic child in (System.Collections.IEnumerable)
-                     _childrenOf.Invoke(_menu, new object[] { item }))
+            foreach (var child in _menu.ChildrenOf(item))
             {
-                if (_ctx.CanSee(child.Title))
+                if (_ctx.CanSee(child.Id))
                     mi.DropDownItems.Add(CreateItem(child));
             }
 
-            if (!string.IsNullOrEmpty((string)item.Handler))
-                mi.Click += delegate { _menu.Invoke(item, this); };
+            if (!string.IsNullOrEmpty(item.DllName) || string.Equals(item.Caption, "ChangePassword", StringComparison.OrdinalIgnoreCase))
+            {
+                mi.Click += MenuClicked;
+            }
 
             return mi;
         }
 
-        private void Others() => MessageBox.Show("Разное");
-        private void Stuff() => MessageBox.Show("Сотрудники");
-        private void Orders() => MessageBox.Show("Приказы");
-        private void Docs() => MessageBox.Show("Документы");
-        private void Departs() => MessageBox.Show("Отделы");
-        private void Towns() => MessageBox.Show("Города");
-        private void Posts() => MessageBox.Show("Должности");
-        private void About() => MessageBox.Show("О программе");
-        private void Content() => MessageBox.Show("Оглавление");
-        private void Window() => MessageBox.Show("Окно");
+        private void MenuClicked(object sender, EventArgs e)
+        {
+            if (sender is ToolStripMenuItem mi && mi.Tag is DbMenuItem item)
+            {
+                if (string.Equals(item.Caption, "ChangePassword", StringComparison.OrdinalIgnoreCase))
+                {
+                    using (var form = new ChangePasswordForm(_authService, _ctx))
+                        form.ShowDialog(this);
+                    return;
+                }
+
+                LoadModule(item);
+            }
+        }
+
+        private void LoadModule(DbMenuItem item)
+        {
+            var modulesDir = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Modules");
+            var path = Path.Combine(modulesDir, item.DllName);
+
+            if (!File.Exists(path))
+            {
+                MessageBox.Show($"Модуль {item.DllName} не найден в {modulesDir}", "Модуль", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+
+            try
+            {
+                var asm = Assembly.LoadFrom(path);
+                var type = asm.GetType(item.EntryPoint, throwOnError: true);
+                if (!(Activator.CreateInstance(type) is IModuleEntry entry))
+                    throw new InvalidOperationException("Точка входа не реализует IModuleEntry");
+
+                var form = entry.CreateForm(_ctx);
+                form.MdiParent = this;
+                form.Show();
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show("Ошибка открытия модуля: " + ex.Message, "Модуль", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+        }
     }
 }
